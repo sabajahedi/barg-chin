@@ -19,7 +19,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MEMBERS = "@DrMAminiSh @Telahe72 @kazemi967 @Greeenbear @JahediSaba"
+MEMBERS = os.getenv("MEMBERS", "")
 
 NIGHT_MESSAGE = (
     "عزیزان! برین حیاطتون رو جارو کنین و برگاتون رو جمع کنین! 🍂🍁\n\n"

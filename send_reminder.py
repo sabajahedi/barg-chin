@@ -5,7 +5,7 @@ import httpx
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-MEMBERS = "@DrMAminiSh @Telahe72 @kazemi967 @Greeenbear @JahediSaba"
+MEMBERS = os.environ["MEMBERS"]
 
 NIGHT_MESSAGE = (
     "عزیزان! برین حیاطتون رو جارو کنین و برگاتون رو جمع کنین! 🍂🍁\n\n"
