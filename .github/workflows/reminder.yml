@@ -1,0 +1,38 @@
+name: Send Leave Reminder
+
+on:
+  schedule:
+    # 12:34 AM Iran time (IRST UTC+3:30) = 21:04 UTC
+    - cron: "4 21 * * *"
+    # 12:34 PM Iran time (IRST UTC+3:30) = 09:04 UTC
+    - cron: "4 9 * * *"
+  workflow_dispatch: # allows manual trigger for testing
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install httpx
+
+      - name: Determine time of day
+        id: period
+        run: |
+          HOUR=$(TZ="Asia/Tehran" date +%H)
+          if [ "$HOUR" -lt 6 ] || [ "$HOUR" -ge 18 ]; then
+            echo "value=night" >> $GITHUB_OUTPUT
+          else
+            echo "value=day" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send reminder
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python send_reminder.py ${{ steps.period.outputs.value }}
