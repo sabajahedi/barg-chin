@@ -1,7 +1,8 @@
 import json
 import os
+import re
 import logging
-from datetime import time
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
@@ -22,6 +23,10 @@ logger = logging.getLogger(__name__)
 
 MEMBERS = os.getenv("MEMBERS", "")
 NAME_MAP = json.loads(os.getenv("NAME_MAP", "{}"))  # {"name": "@handle", ...}
+INACTIVE_THRESHOLD = timedelta(minutes=5)
+
+# Track last message time per username
+last_seen: dict[str, datetime] = {}
 
 NIGHT_MESSAGE = (
     "عزیزان! برین حیاطتون رو جارو کنین و برگاتون رو جمع کنین! 🍂🍁\n\n"
@@ -63,18 +68,31 @@ async def chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def tag_mentioned(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Tag users when their name appears in a message."""
+    if str(update.effective_chat.id) != CHAT_ID:
+        return
+
     text = update.message.text
     if not text:
         return
 
+    now = datetime.now()
     sender_username = update.message.from_user.username
+
+    # Update sender's last seen time
+    if sender_username:
+        last_seen[sender_username] = now
+
     tags = set()
     for name, handle in NAME_MAP.items():
-        if name in text:
+        if re.search(rf'\b{re.escape(name)}\b', text):
+            username = handle.lstrip("@")
             # Skip self-mentions
-            if sender_username and handle.lstrip("@") == sender_username:
+            if sender_username and username == sender_username:
                 continue
-            tags.add(handle)
+            # Only tag if they've been inactive for 5+ minutes
+            user_last_seen = last_seen.get(username)
+            if user_last_seen is None or (now - user_last_seen) >= INACTIVE_THRESHOLD:
+                tags.add(handle)
 
     if tags:
         await update.message.reply_text(" ".join(tags))
