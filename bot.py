@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 from datetime import time
@@ -5,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 load_dotenv()
 
@@ -20,6 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 MEMBERS = os.getenv("MEMBERS", "")
+NAME_MAP = json.loads(os.getenv("NAME_MAP", "{}"))  # {"name": "@handle", ...}
 
 NIGHT_MESSAGE = (
     "عزیزان! برین حیاطتون رو جارو کنین و برگاتون رو جمع کنین! 🍂🍁\n\n"
@@ -59,12 +61,35 @@ async def chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"This chat's ID is: {chat_id}")
 
 
+async def tag_mentioned(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Tag users when their name appears in a message."""
+    text = update.message.text
+    if not text:
+        return
+
+    sender_username = update.message.from_user.username
+    tags = set()
+    for name, handle in NAME_MAP.items():
+        if name in text:
+            # Skip self-mentions
+            if sender_username and handle.lstrip("@") == sender_username:
+                continue
+            tags.add(handle)
+
+    if tags:
+        await update.message.reply_text(" ".join(tags))
+
+
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("chatid", chatid))
+
+    # Tag people when their name is mentioned
+    if NAME_MAP:
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tag_mentioned))
 
     # Schedule reminders only if CHAT_ID is configured
     if CHAT_ID:
