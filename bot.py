@@ -69,8 +69,8 @@ def main():
     # Schedule reminders only if CHAT_ID is configured
     if CHAT_ID:
         job_queue = app.job_queue
-        job_queue.run_daily(send_night_reminder, time=time(hour=0, minute=34, tzinfo=TIMEZONE))
-        job_queue.run_daily(send_day_reminder, time=time(hour=12, minute=34, tzinfo=TIMEZONE))
+        job_queue.run_daily(send_day_reminder, time=time(hour=9, minute=10, tzinfo=TIMEZONE))
+        job_queue.run_daily(send_night_reminder, time=time(hour=21, minute=15, tzinfo=TIMEZONE))
         logger.info("Reminders scheduled for 12:34 AM and 12:34 PM (%s)", TIMEZONE)
     else:
         logger.warning(
